@@ -13,3 +13,4 @@ class adc:
 
     def retrieveData(self):
         print(self.chan.value, self.chan.voltage)
+        return self.chan
