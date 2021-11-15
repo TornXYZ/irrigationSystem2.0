@@ -3,20 +3,20 @@ from configparser import ConfigParser
 class configuration:
     "This class controls reading and writing to the config file"
 
-    def __init__(self, configFile: str) -> None:
+    def __init__(self, configfile: str) -> None:
         self.config = ConfigParser()
-        self.config.read(configFile)
+        self.config.read(configfile)
 
         self.ser = int(self.config['GPIO']['SERIAL_OUT'])
-        self.sClk = int(self.config['GPIO']['SERIALCLOCK_OUT'])
-        self.rClkSensor = int(self.config['GPIO']['REGISTERCLOCK_SENSOR_OUT'])
-        self.rClkValve = int(self.config['GPIO']['REGISTERCLOCK_VALVE_OUT'])
+        self.sclk = int(self.config['GPIO']['SERIALCLOCK_OUT'])
+        self.rclk_sensor = int(self.config['GPIO']['REGISTERCLOCK_SENSOR_OUT'])
+        self.rclk_valve = int(self.config['GPIO']['REGISTERCLOCK_VALVE_OUT'])
         self.pump = int(self.config['GPIO']['PUMP_OUT'])
         return
 
 
-    def addDict(self, section, dictToAdd: dict) -> None:
-        self.config[section] = dictToAdd
+    def addDict(self, section, dict_to_add: dict) -> None:
+        self.config[section] = dict_to_add
         return
 
 

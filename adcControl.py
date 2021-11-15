@@ -11,6 +11,6 @@ class adc:
         self.ads = ADS.ADS1015(self.i2c)
         self.chan = AnalogIn(self.ads, ADS.P0)
 
-    def retrieveData(self) -> AnalogIn:
+    def retrieve_data(self) -> AnalogIn:
         print(self.chan.value, self.chan.voltage)
         return self.chan
