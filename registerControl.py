@@ -38,6 +38,7 @@ class register:
 
         self.pulse(self.register_clock_pin)
         print("Register cleared!")
+        time.sleep(0.3) # sleep to wait for sensor saturation
         return
 
 
@@ -54,11 +55,11 @@ class register:
 
         self.pulse(self.register_clock_pin)
         print("Register set to: " + str(input_bitarray))
-        time.sleep(0.01) # sleep to wait for sensor saturation
+        time.sleep(0.3) # sleep to wait for sensor saturation
         return
 
         
-    def set_single_it(self, slot: int) -> None:
+    def set_single_bit(self, slot: int) -> None:
         array = bitarray(slot + 1)
         array.setall(0)
         array[slot] = 1

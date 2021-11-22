@@ -8,7 +8,7 @@ class adc:
 
     def __init__(self):
         self.i2c = busio.I2C(board.SCL, board.SDA)
-        self.ads = ADS.ADS1015(self.i2c)
+        self.ads = ADS.ADS1015(self.i2c) 
         self.chan = AnalogIn(self.ads, ADS.P0)
 
     def retrieve_data(self) -> AnalogIn:

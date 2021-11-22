@@ -3,8 +3,16 @@ import registerControl
 import configurationManager
 import adcControl
 from datetime import datetime
-import numpy as np
-from typing import List
+import csv
+import os.path
+
+class measurement:
+    "Contains a measurement with voltage and value"
+
+    def __init__(self, voltage: int, value: float) -> None:
+        self.value = value
+        self.voltage = voltage
+        return
 
 class flowerpot:
     "Class which represents a flowerpot."
@@ -15,6 +23,11 @@ class flowerpot:
         self.is_active = True
         self.actual_moisture = measurement
         self.expected_moisture = 0
+        return
+
+
+    def set_actual_moisture(self, moisture: measurement) -> None:
+        self.actual_moisture = moisture
         return
 
 
@@ -29,12 +42,13 @@ class flowerpotManager:
     "This class holds all flowerpots and provides handling functions."
 
     def __init__(self) -> None:
-        self.all_flowerpots: List[flowerpot] = []
+        self.all_flowerpots = []
         self.config = configurationManager.configuration('config.ini')
         self.pump = pump(self.config.pump)
         self.sensor_register = registerControl.register(self.config.ser, self.config.sclk, self.config.rclk_sensor)
         self.valve_register = registerControl.register(self.config.ser, self.config.sclk, self.config.rclk_valve)
         self.adc = adcControl.adc()
+        self.last_timestamp = int
         return
 
 
@@ -47,33 +61,32 @@ class flowerpotManager:
     #def removeFlowerpot(self, flowerpotID):
 
 
-    def retrieve_single_data(self, pot: flowerpot, current_time: datetime) -> None:
-        self.sensor_register.set_single_it(pot.slot)
+    def retrieve_single_data(self, pot: flowerpot) -> None:
+        self.sensor_register.set_single_bit(pot.slot)
         adc_channel_output = self.adc.retrieve_data()
-        pot.actual_moisture.timestamp = current_time
-        pot.actual_moisture.voltage = adc_channel_output.voltage
-        pot.actual_moisture.value = adc_channel_output.value
+        meas = measurement(adc_channel_output.voltage, adc_channel_output.value)
+        pot.set_actual_moisture(meas)
 
         self.sensor_register.clear()
         return
+            
 
-
-    def retrieveAllData(self) -> None:
-        current_time = datetime.now()
-
-        for pot in self.all_flowerpots:
-            if (pot.is_active):
-                self.retrieve_single_data(pot, current_time)
+    def retrieve_all_data(self) -> None:
+        self.last_timestamp = datetime.now()
+        [self.retrieve_single_data(pot) for pot in self.all_flowerpots if pot.is_active]
+        self.write_data_to_file('example.csv')
         return
-        
-    # def writeDataToFile
 
 
-class measurement:
-    "Contains a measurement with value and timestamp"
-
-    def __init__(self, timestamp: datetime, voltage: int, value: float) -> None:
-        self.value = value
-        self.voltage = voltage
-        self.timestamp = timestamp
+    def write_data_to_file(self, filename: str) -> None:
+        if not os.path.exists(filename):
+            header = ['timestamp'] + [pot.name for pot in self.all_flowerpots]
+            with open(filename, 'w') as f:
+                writer = csv.writer(f)
+                writer.writerow(header)
+            
+        data_to_write = [self.last_timestamp] + [pot.actual_moisture.value for pot in self.all_flowerpots]
+        with open(filename, 'a') as f:
+            writer = csv.writer(f)
+            writer.writerow(data_to_write)
         return
