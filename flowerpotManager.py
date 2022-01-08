@@ -53,11 +53,18 @@ class flowerpotManager:
 
 
     def add_flowerpot(self, slot: int, name: str) -> flowerpot:
-        # add check for overwriting slots
-        pot = flowerpot(slot, name)
-        self.all_flowerpots.append(pot)
+        
+        for pot in self.all_flowerpots:
+            if slot == pot.slot:
+                print("Slot is already occupied! Pot has not been added.")
+                return None
+            elif name == pot.name:
+                print("Pot name exists already!")
+
+        new_pot = flowerpot(slot, name)
+        self.all_flowerpots.append(new_pot)
         self.all_flowerpots.sort(key=lambda pot: pot.slot)
-        return pot
+        return new_pot
 
 
     def remove_flowerpot(self, slot: int) -> None:
