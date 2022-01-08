@@ -2,9 +2,8 @@ from pumpControl import pump
 import registerControl
 import configurationManager
 import adcControl
+import fileManager
 from datetime import datetime
-import csv
-import os.path
 
 class measurement:
     "Contains a measurement with voltage and value"
@@ -48,24 +47,32 @@ class flowerpotManager:
         self.sensor_register = registerControl.register(self.config.ser, self.config.sclk, self.config.rclk_sensor)
         self.valve_register = registerControl.register(self.config.ser, self.config.sclk, self.config.rclk_valve)
         self.adc = adcControl.adc()
+        self.file_manager = fileManager.fileManager()
         self.last_timestamp = int
         return
 
 
-    def add_flowerpot(self, slot: int, name: str) -> None:
+    def add_flowerpot(self, slot: int, name: str) -> flowerpot:
+        # add check for overwriting slots
         pot = flowerpot(slot, name)
         self.all_flowerpots.append(pot)
-        return
+        self.all_flowerpots.sort(key=lambda pot: pot.slot)
+        return pot
 
 
-    #def removeFlowerpot(self, flowerpotID):
+    def remove_flowerpot(self, slot: int) -> None:
+        def find_pot_by_slot():
+            for pot in self.all_flowerpots:
+                if pot.slot == slot:
+                    return pot
+
+        self.all_flowerpots.remove(find_pot_by_slot())
 
 
     def retrieve_single_data(self, pot: flowerpot) -> None:
         self.sensor_register.set_single_bit(pot.slot)
         adc_channel_output = self.adc.retrieve_data()
-        meas = measurement(adc_channel_output.voltage, adc_channel_output.value)
-        pot.set_actual_moisture(meas)
+        pot.set_actual_moisture(measurement(adc_channel_output.voltage, adc_channel_output.value))
 
         self.sensor_register.clear()
         return
@@ -74,19 +81,5 @@ class flowerpotManager:
     def retrieve_all_data(self) -> None:
         self.last_timestamp = datetime.now()
         [self.retrieve_single_data(pot) for pot in self.all_flowerpots if pot.is_active]
-        self.write_data_to_file('example.csv')
-        return
-
-
-    def write_data_to_file(self, filename: str) -> None:
-        if not os.path.exists(filename):
-            header = ['timestamp'] + [pot.name for pot in self.all_flowerpots]
-            with open(filename, 'w') as f:
-                writer = csv.writer(f)
-                writer.writerow(header)
-            
-        data_to_write = [self.last_timestamp] + [pot.actual_moisture.value for pot in self.all_flowerpots]
-        with open(filename, 'a') as f:
-            writer = csv.writer(f)
-            writer.writerow(data_to_write)
+        self.file_manager.write_data_to_file('example.csv', self.last_timestamp, self.all_flowerpots)
         return
