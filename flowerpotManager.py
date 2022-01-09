@@ -1,9 +1,9 @@
 from pumpControl import pump
 import registerControl
-import configurationManager
 import adcControl
 import fileManager
 from datetime import datetime
+import time
 
 class measurement:
     "Contains a measurement with voltage and value"
@@ -29,6 +29,18 @@ class flowerpot:
         self.actual_moisture = moisture
         return
 
+    def set_expected_moisture(self, moisture: int) -> None:
+        self.expected_moisture = moisture
+        return
+
+    def activate(self) -> None:
+        self.is_active = True
+        return
+
+    def deactivate(self) -> None:
+        self.is_active = False
+        return
+
 
     def needs_water(self) -> bool:
         if(self.actual_moisture <= self.expected_moisture):
@@ -40,12 +52,13 @@ class flowerpot:
 class flowerpotManager:
     "This class holds all flowerpots and provides handling functions."
 
-    def __init__(self) -> None:
+    def __init__(self, config) -> None:
         self.all_flowerpots = []
-        self.config = configurationManager.configuration('config.ini')
-        self.pump = pump(self.config.pump)
-        self.sensor_register = registerControl.register(self.config.ser, self.config.sclk, self.config.rclk_sensor)
-        self.valve_register = registerControl.register(self.config.ser, self.config.sclk, self.config.rclk_valve)
+        self.output_path = config.config['PATHS']['DATA_OUTPUT_PATH']
+        self.saturation_sleep_time = int(config.config['PARAMS']['SAMPLE_SATURATION_SLEEP_IN_MS']) / 1000
+        self.pump = pump(config.pump)
+        self.sensor_register = registerControl.register(config.ser, config.sclk, config.rclk_sensor)
+        self.valve_register = registerControl.register(config.ser, config.sclk, config.rclk_valve)
         self.adc = adcControl.adc()
         self.file_manager = fileManager.fileManager()
         self.last_timestamp = int
@@ -78,6 +91,7 @@ class flowerpotManager:
 
     def retrieve_single_data(self, pot: flowerpot) -> None:
         self.sensor_register.set_single_bit(pot.slot)
+        time.sleep(self.saturation_sleep_time) # sleep to wait for sensor saturation
         adc_channel_output = self.adc.retrieve_data()
         pot.set_actual_moisture(measurement(adc_channel_output.voltage, adc_channel_output.value))
 
@@ -88,5 +102,5 @@ class flowerpotManager:
     def retrieve_all_data(self) -> None:
         self.last_timestamp = datetime.now()
         [self.retrieve_single_data(pot) for pot in self.all_flowerpots if pot.is_active]
-        self.file_manager.write_data_to_file('example.csv', self.last_timestamp, self.all_flowerpots)
+        self.file_manager.write_data_to_file(self.output_path, self.last_timestamp, self.all_flowerpots)
         return

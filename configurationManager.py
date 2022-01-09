@@ -3,9 +3,9 @@ from configparser import ConfigParser
 class configuration:
     "This class controls reading and writing to the config file"
 
-    def __init__(self, configfile: str) -> None:
+    def __init__(self, config_path: str) -> None:
         self.config = ConfigParser()
-        self.config.read(configfile)
+        self.config.read(config_path)
 
         self.ser = int(self.config['GPIO']['SERIAL_OUT'])
         self.sclk = int(self.config['GPIO']['SERIALCLOCK_OUT'])

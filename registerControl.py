@@ -1,6 +1,5 @@
 import RPi.GPIO as GPIO
 from bitarray import bitarray
-import time
 
 class register:
     "This class controls shift registers."
@@ -38,7 +37,7 @@ class register:
 
         self.pulse(self.register_clock_pin)
         print("Register cleared!")
-        time.sleep(0.3) # sleep to wait for sensor saturation
+        #time.sleep(0.3) # sleep to wait for sensor saturation
         return
 
 
@@ -55,7 +54,7 @@ class register:
 
         self.pulse(self.register_clock_pin)
         print("Register set to: " + str(input_bitarray))
-        time.sleep(0.3) # sleep to wait for sensor saturation
+        #time.sleep(0.3) # sleep to wait for sensor saturation
         return
 
         
