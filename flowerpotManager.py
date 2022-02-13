@@ -57,6 +57,7 @@ class flowerpotManager:
         self.file_manager = fileManager.fileManager()
         self.last_timestamp = int
 
+        self.highest_occupied_slot = 0
         self.pot_collection = []
         self.initialize_pot_collection(self.pot_dump_path)
         return
@@ -67,14 +68,15 @@ class flowerpotManager:
         parsed_pots = self.file_manager.read_json(path)
 
         for parsed_pot in parsed_pots:
-            name = parsed_pot['name']
-            slot = parsed_pot['slot']
-            new_pot = flowerpot(slot, name)
+            new_pot = flowerpot(parsed_pot['slot'], parsed_pot['name'])
 
             new_pot.is_active = parsed_pot['is_active']
             new_pot.expected_moisture = parsed_pot['expected_moisture']
 
             self.add_pot(new_pot)
+
+            if self.highest_occupied_slot < new_pot.slot:
+                self.highest_occupied_slot = new_pot.slot
 
         print(f"Initialization complete.")
         return
@@ -92,78 +94,30 @@ class flowerpotManager:
 
 
     def add_pot(self, new_pot: flowerpot) -> None:
-        def fill_slot_gap_with_dummy_pots(start_index, end_index):
-            def add_dummy_pot(slot):
-                new_dummy_pot = flowerpot(slot, "<empty>")
-                self.pot_collection.append(new_dummy_pot)
-                print(f"Dummy pot added to collection at slot {slot}")
-                return
-
-            index = start_index
-            while index <= end_index:
-                add_dummy_pot(index)
-                index += 1
-            return
-
-        def update_pot(new_pot):
-            if self.pot_collection[new_pot.slot].name != "<empty>":
-                print(f"Slot {new_pot.slot} already occupied! Pot has not been added.")
+        for pot in self.pot_collection:
+            if pot.slot == new_pot.slot:
+                print(f"Slot {new_pot.slot} already occupied! No pot has not been added.")
                 raise exceptions.PotDoubletteError
-            
-            self.pot_collection[new_pot.slot] = new_pot
-            print(f"Dummy pot at slot {new_pot.slot} overwritten!")
-            print(f"Pot \"{new_pot.name}\" added to collection at slot {new_pot.slot}.")
-            return
+        
+        self.pot_collection.append(new_pot)
+        if self.highest_occupied_slot < new_pot.slot:
+            self.highest_occupied_slot = new_pot.slot
 
-            
-        pot_collection_length = len(self.pot_collection)
-
-        if pot_collection_length == new_pot.slot:
-            self.pot_collection.append(new_pot)
-            print(f"Pot \"{new_pot.name}\" added to collection at slot {new_pot.slot}.")
-        elif pot_collection_length < new_pot.slot:
-            fill_slot_gap_with_dummy_pots(pot_collection_length, new_pot.slot - 1)
-            self.pot_collection.append(new_pot)
-            print(f"Pot \"{new_pot.name}\" added to collection at slot {new_pot.slot}.")
-        elif pot_collection_length > new_pot.slot:
-            update_pot(new_pot)
+        self.pot_collection.sort(key=lambda pot: pot.slot)
 
         self.retrieve_single_data(new_pot)
-        
         self.dump_pot_collection()
         return
 
 
     def remove_pot(self, slot: int) -> None:
-        def remove_last_dummy_pots():
-            last_pot_is_dummy = True
-            while last_pot_is_dummy:
-                if self.pot_collection[-1].name == "<empty>":
-                    print(f"Dummy pot at slot {self.pot_collection[-1].slot} removed.")
-                    del self.pot_collection[-1]
-                else:
-                    last_pot_is_dummy = False
-            return
-
-        def overwrite_slot_with_dummy_pot(slot):
-                new_dummy_pot = flowerpot(slot, "<empty>")
-                self.pot_collection[slot] = new_dummy_pot
-                print(f"Pot at slot {slot} removed and replaced by dummy pot.")
+        for pot in self.pot_collection:
+            if pot.slot == slot:
+                self.pot_collection.remove(pot)
+                self.dump_pot_collection()
                 return
-
-        pot_collection_length = len(self.pot_collection)
-
-        if pot_collection_length - 1 == slot:
-            print(f"Pot \"{self.pot_collection[slot].name}\" removed.")
-            del self.pot_collection[slot]
-            remove_last_dummy_pots()
-        elif pot_collection_length - 1 < slot:
-            print(f"No pot listed for slot {slot}")
-        elif pot_collection_length - 1 > slot:
-            overwrite_slot_with_dummy_pot(slot)
-        
-        self.dump_pot_collection()
-        return
+        print(f"Pot at slot {slot} is not existing! No pot has been deleted.")
+        raise exceptions.PotNotExistingError
 
 
     def retrieve_single_data(self, pot: flowerpot) -> None:
@@ -178,6 +132,8 @@ class flowerpotManager:
 
     def retrieve_all_data(self) -> None:
         self.last_timestamp = datetime.now()
-        [self.retrieve_single_data(pot) for pot in self.pot_collection if pot.is_active and pot.name != "<empty>"]
+        for pot in self.pot_collection:
+            self.retrieve_single_data(pot)
+
         self.file_manager.write_data_to_file(self.output_path, self.last_timestamp, self.pot_collection)
         return
