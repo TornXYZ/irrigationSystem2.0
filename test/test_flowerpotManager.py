@@ -9,6 +9,16 @@ import unittest
 
 class TestFlowerpot(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        print('setupClass')
+
+
+    @classmethod
+    def tearDownClass(cls):
+        print('tearDownClass')
+
+
     def setUp(self):
         self.pot = flowerpotManager.flowerpot(42, 'testpot')
 
@@ -56,7 +66,8 @@ class TestFlowerpot(unittest.TestCase):
 class TestFlowerpotManager(unittest.TestCase):
     
     def test_HELLO(self):
-        print('HELLO!')
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()
