@@ -46,6 +46,9 @@ class fileManager():
 
 
     def write_data_to_file(self, filename: str,timestamp: datetime, flowerpots) -> None:
+        if not flowerpots:
+            return
+            
         if not os.path.exists(filename):
             maximum_slot = max([pot.slot for pot in flowerpots])
 

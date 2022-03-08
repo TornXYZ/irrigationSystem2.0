@@ -2,25 +2,26 @@ import tkinter as tk
 import flowerpotManager
 import configurationManager
 import exceptions
+import threading
 
 class GUI:
     "This class controls the GUI."
 
     def __init__(self, irr_system: flowerpotManager):
         self.irr_system = irr_system
-
+        
         self.root = tk.Tk()
         self.header_frame = tk.Frame(self.root, borderwidth=3, relief='sunken')
-        self.pot_frame = tk.Frame(self.root, borderwidth=3, relief='sunken')
         self.status_frame = tk.Frame(self.root, borderwidth=3, relief='sunken', bg='white')
+        self.pot_frame = tk.Frame(self.root, borderwidth=3, relief='sunken', bg='white')
 
-        self.header_frame.pack(fill='x')
-        self.pot_frame.pack(fill='x')
-        self.status_frame.pack(fill='x')
-        
+        self.header_frame.pack(fill='x', side=tk.TOP)
+        self.status_frame.pack(fill='x', side=tk.BOTTOM)
+        self.pot_frame.pack(fill='both', expand=True)
+
 
         tk.Label(self.header_frame, text="IRRIGATION SYSTEM").grid(row=0)
-        tk.Label(self.header_frame, text="Add flowerpot: ").grid(row=1, column=0)
+        tk.Label(self.header_frame, text="New flowerpot: ").grid(row=1, column=0)
         tk.Label(self.header_frame, text="Flowerpot list: ").grid(row=2, column=0)
 
         self.new_pot_slot_entry = tk.Entry(self.header_frame)
@@ -30,7 +31,7 @@ class GUI:
         new_pot_name_entry.insert(0, "pot0")
         new_pot_name_entry.grid(row=1, column=2)
 
-        new_pot_button = tk.Button(self.header_frame, text="Add pot.", command=lambda: self.add_flowerpot(int(self.new_pot_slot_entry.get()), str(new_pot_name_entry.get()))).grid(row=1, column=3)
+        new_pot_button = tk.Button(self.header_frame, text="Add.", command=lambda: self.add_flowerpot(int(self.new_pot_slot_entry.get()), str(new_pot_name_entry.get()))).grid(row=1, column=3)
 
         self.num_pots_str = tk.StringVar()
         self.num_pots_str.set("0")
@@ -40,10 +41,7 @@ class GUI:
         self.log_output.set("Booting complete!")
         log_label = tk.Label(self.status_frame, textvariable=self.log_output, bg='white').grid(row=1, column=0, columnspan=3)
 
-        self.name_label_collection = []
-        self.slot_label_collection = []
-        self.actual_moisture_label_collection = []
-        self.expected_moisture_label_collection = []
+        self.pot_labels = {}
 
         self.initialize_pot_labels()
         self.update_new_pot_slot_insert()
@@ -51,26 +49,40 @@ class GUI:
 
 
     def run(self) -> None:
+        irr_system_thread = threading.Thread(target=self.irr_system.run)
+        irr_system_thread.start()
+
         self.root.mainloop()
+
+        self.irr_system.stop_execution = True
+        irr_system_thread.join()
         return
 
 
     def build_pot_labels(self, pot):
+        new_pot_labels = {}
+
         new_slot_label = tk.Label(self.pot_frame, text=pot.slot)
         new_slot_label.grid(row=3 + int(pot.slot), column=0)
-        self.slot_label_collection.append(new_slot_label)
+        new_pot_labels['slot'] = new_slot_label
 
         new_name_label = tk.Label(self.pot_frame, text=pot.name)
         new_name_label.grid(row=3 + int(pot.slot), column=1)
-        self.name_label_collection.append(new_name_label)
+        new_pot_labels['name'] = new_name_label
 
         new_actual_moisture_label = tk.Label(self.pot_frame, text=pot.actual_moisture)
         new_actual_moisture_label.grid(row=3 + int(pot.slot), column=2)
-        self.actual_moisture_label_collection.append(new_actual_moisture_label)
+        new_pot_labels['actual moisture'] = new_actual_moisture_label
 
         new_expected_moisture_label = tk.Label(self.pot_frame, text=pot.expected_moisture)
         new_expected_moisture_label.grid(row=3 + int(pot.slot), column=3)
-        self.expected_moisture_label_collection.append(new_expected_moisture_label)
+        new_pot_labels['expected moisture'] = new_expected_moisture_label
+
+        new_delete_label = tk.Button(self.pot_frame, text='DEL', bg='red', command=lambda: self.remove_flowerpot(pot.slot))
+        new_delete_label.grid(row=3 + int(pot.slot), column=4)
+        new_pot_labels['delete'] = new_delete_label
+
+        self.pot_labels[str(pot.slot)] = new_pot_labels
         return
 
 
@@ -91,7 +103,7 @@ class GUI:
         for pot in self.irr_system.pot_collection:
             self.build_pot_labels(pot)
 
-        self.num_pots_str.set(str(len(self.name_label_collection)))
+        self.num_pots_str.set(str(len(self.pot_labels)))
         return
 
 
@@ -106,7 +118,7 @@ class GUI:
         self.log_output.set(f"Pot \'{new_pot.name}\' added at slot {new_pot.slot}.")
         self.build_pot_labels(new_pot)
 
-        self.num_pots_str.set(str(len(self.name_label_collection)))
+        self.num_pots_str.set(str(len(self.pot_labels)))
         self.update_new_pot_slot_insert()
         return
 
@@ -118,7 +130,11 @@ class GUI:
             self.log_output.set(f"Pot at slot {slot} is not existing! No pot has been deleted.")
             return
 
-        # add functionality to remove widgets
+        labels = self.pot_labels.pop(str(slot))
+        for label in labels.values():
+            label.destroy()
+
+        self.num_pots_str.set(str(len(self.pot_labels)))
 
 
 

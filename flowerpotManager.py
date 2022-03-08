@@ -47,9 +47,12 @@ class flowerpotManager:
     "This class holds all flowerpots and provides handling functions."
 
     def __init__(self, config) -> None:
+        self.stop_execution = False
+
         self.output_path = config.config['PATHS']['DATA_OUTPUT_PATH']
         self.pot_dump_path = config.config['PATHS']['POT_DUMP_PATH']
         self.saturation_sleep_time = int(config.config['PARAMS']['SAMPLE_SATURATION_SLEEP_IN_MS']) / 1000
+        self.sample_rate = int(config.config['PARAMS']['SAMPLE_RATE_IN_MS']) / 1000
         self.pump = pump(config.pump)
         self.sensor_register = registerControl.register(config.ser, config.sclk, config.rclk_sensor)
         self.valve_register = registerControl.register(config.ser, config.sclk, config.rclk_valve)
@@ -137,3 +140,9 @@ class flowerpotManager:
 
         self.file_manager.write_data_to_file(self.output_path, self.last_timestamp, self.pot_collection)
         return
+
+
+    def run(self) -> None:
+        while(not self.stop_execution):
+            time.sleep(self.sample_rate)
+            self.retrieve_all_data()
