@@ -8,7 +8,7 @@ class register:
         self.serial_data_din = serial_data_pin
         self.serial_clock_pin = serial_clock_pin
         self.register_clock_pin = register_clock_pin
-        self.max_supported_pots = 16
+        self.max_supported_pots = 8
 
         self.setup()
         return

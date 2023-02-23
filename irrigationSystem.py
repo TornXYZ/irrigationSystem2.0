@@ -97,7 +97,7 @@ class GUI:
         self.new_pot_slot_entry.delete(0, tk.END)
         self.new_pot_slot_entry.insert(0, str(new_insert))
         return
-                
+
 
     def initialize_pot_labels(self):
         for pot in self.irr_system.pot_collection:

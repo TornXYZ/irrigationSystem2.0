@@ -35,7 +35,6 @@ class flowerpot:
         self.is_active = False
         return
 
-
     def needs_water(self) -> bool:
         if(self.actual_moisture <= self.expected_moisture):
             return True
@@ -63,6 +62,7 @@ class flowerpotManager:
         self.highest_occupied_slot = 0
         self.pot_collection = []
         self.initialize_pot_collection(self.pot_dump_path)
+        self.new_data_available = False
         return
 
 
@@ -99,7 +99,7 @@ class flowerpotManager:
     def add_pot(self, new_pot: flowerpot) -> None:
         for pot in self.pot_collection:
             if pot.slot == new_pot.slot:
-                print(f"Slot {new_pot.slot} already occupied! No pot has not been added.")
+                print(f"Slot {new_pot.slot} already occupied! No pot has been added.")
                 raise exceptions.PotDoubletteError
         
         self.pot_collection.append(new_pot)
@@ -130,6 +130,7 @@ class flowerpotManager:
         pot.set_actual_moisture(adc_channel_output.value)
 
         self.sensor_register.clear()
+        self.new_data_available = True
         return
             
 
