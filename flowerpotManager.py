@@ -3,6 +3,7 @@ import registerControl
 import adcControl
 import fileManager
 import exceptions
+import threading
 
 from datetime import datetime
 import time
@@ -42,12 +43,13 @@ class flowerpot:
             return False
 
 
-class flowerpotManager:
+class flowerpotManager(threading.Thread):
     "This class holds all flowerpots and provides handling functions."
 
     def __init__(self, config) -> None:
+        super().__init__()
         self.stop_execution = False
-
+        self.data_available = False
         self.output_path = config.config['PATHS']['DATA_OUTPUT_PATH']
         self.pot_dump_path = config.config['PATHS']['POT_DUMP_PATH']
         self.saturation_sleep_time = int(config.config['PARAMS']['SAMPLE_SATURATION_SLEEP_IN_MS']) / 1000
@@ -62,7 +64,6 @@ class flowerpotManager:
         self.highest_occupied_slot = 0
         self.pot_collection = []
         self.initialize_pot_collection(self.pot_dump_path)
-        self.new_data_available = False
         return
 
 
@@ -140,6 +141,7 @@ class flowerpotManager:
             self.retrieve_single_data(pot)
 
         self.file_manager.write_data_to_file(self.output_path, self.last_timestamp, self.pot_collection)
+        self.data_available = True
         return
 
 

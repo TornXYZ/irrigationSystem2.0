@@ -11,6 +11,10 @@ class GUI:
         self.irr_system = irr_system
         
         self.root = tk.Tk()
+
+        self.polling_delay_for_new_data = 1000
+        self.root.after(self.polling_delay_for_new_data, self.update_actual_moisture_labels)
+
         self.header_frame = tk.Frame(self.root, borderwidth=3, relief='sunken')
         self.status_frame = tk.Frame(self.root, borderwidth=3, relief='sunken', bg='white')
         self.pot_frame = tk.Frame(self.root, borderwidth=3, relief='sunken', bg='white')
@@ -49,13 +53,21 @@ class GUI:
 
 
     def run(self) -> None:
-        irr_system_thread = threading.Thread(target=self.irr_system.run)
-        irr_system_thread.start()
+        self.irr_system.start()
 
         self.root.mainloop()
 
         self.irr_system.stop_execution = True
-        irr_system_thread.join()
+        self.irr_system.join()
+        return
+
+    def update_actual_moisture_labels(self) -> None:
+        if self.irr_system.data_available:
+            for pot in self.irr_system.pot_collection:
+                self.pot_labels[str(pot.slot)]['actual moisture'].config(text = pot.actual_moisture)
+            self.irr_system.data_available = False
+            print("Labels updated.")
+        self.root.after(self.polling_delay_for_new_data, self.update_actual_moisture_labels)
         return
 
 
@@ -97,7 +109,6 @@ class GUI:
         self.new_pot_slot_entry.delete(0, tk.END)
         self.new_pot_slot_entry.insert(0, str(new_insert))
         return
-
 
     def initialize_pot_labels(self):
         for pot in self.irr_system.pot_collection:
